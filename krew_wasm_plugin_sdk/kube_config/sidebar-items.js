@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["ConnectionConfig","Connection details for a Kubernetes API server. Includes details about the server and the user identity to be used."],["Server","Minimum set of information required to access a Kubernetes API server"],["UserIdentity","Describe the identity to be used when connecting to the Kubernetes API server"]]});

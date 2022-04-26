@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["KrewWasmSDKError","Custom error types"]],"type":[["Result","An alias to quickly define blocks of code that return a std `Result` that uses a [`KrewWasmSDKError`] as Error type"]]});

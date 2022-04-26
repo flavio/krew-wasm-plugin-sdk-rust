@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["errors","Define the errors raised by this crate"],["kube_config","Set of structs that represent connection details against Kubernetes API server"],["wasi_outbound_http_helper_k8s","Helper functions required to perform HTTP requests against the Kubernetes API server"]]});

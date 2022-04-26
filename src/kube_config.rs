@@ -1,28 +1,35 @@
+//! Set of structs that represent connection details against Kubernetes API
+//! server
+
 use std::fs;
 
 use super::wasi_outbound_http;
 use crate::errors::{KrewWasmSDKError, Result};
 
+/// Connection details for a Kubernetes API server. Includes
+/// details about the server and the user identity to be used.
 pub struct ConnectionConfig {
     pub identity: UserIdentity,
     pub server: Server,
 }
 
 impl ConnectionConfig {
+    /// Create a `ConnectionConfig` by parsing the contents of the default
+    /// kubeconfig file
     pub fn from_kube_config() -> Result<ConnectionConfig> {
         let config = kube_conf::Config::load_default()?;
 
         let kube_ctx = config
             .get_current_context()
-            .ok_or_else(|| KrewWasmSDKError::KubeConfigNoContextError())?;
+            .ok_or(KrewWasmSDKError::KubeConfigNoContextError())?;
 
         let cluster = kube_ctx
             .get_cluster(&config)
-            .ok_or_else(|| KrewWasmSDKError::KubeConfigNoClusterDefinitionError())?;
+            .ok_or(KrewWasmSDKError::KubeConfigNoClusterDefinitionError())?;
 
         let user = kube_ctx
             .get_user(&config)
-            .ok_or_else(|| KrewWasmSDKError::KubeConfigNoUserDefinitionError())?;
+            .ok_or(KrewWasmSDKError::KubeConfigNoUserDefinitionError())?;
 
         let identity = UserIdentity::from_kube_user_and_cluster(&user, &cluster)?;
         let server = Server::from_cluster(&cluster)?;
@@ -30,6 +37,16 @@ impl ConnectionConfig {
         Ok(ConnectionConfig { identity, server })
     }
 
+    /// Connecting against a Kubernetes API server requires some tuning for the
+    /// WASI http guest library. This includes operations like: adding extra
+    /// trusted root CA, handling the user identity.
+    /// This can be done with the `wasi_outbound_http::register_request_config`
+    /// function, but this method is a convenient wrapper around it.
+    ///
+    /// The method returns the ID that identifies this specific connection
+    /// configuration. The method can be called as many times as wanted, but
+    /// it will always return a new ID. Because of that, it's recommended to
+    /// call the method only once and store the ID in a safe place.
     pub fn register<'a>(&'a self) -> Result<String> {
         let accept_invalid_hostnames = false;
         let accept_invalid_certificates = false;
@@ -55,13 +72,20 @@ impl ConnectionConfig {
     }
 }
 
+/// Describe the identity to be used when connecting to the Kubernetes
+/// API server
 pub struct UserIdentity {
+    /// Private key assigned to the user
     pub key: Vec<u8>,
+    /// Certificate assigned to the user
     pub cert: Vec<u8>,
+    /// CA that issued the certificate
     pub ca: Vec<u8>,
 }
 
 impl UserIdentity {
+    /// Creates a `UserIdentity` object by parsing the data stored inside of
+    /// the given kubeconfig.
     fn from_kube_user_and_cluster(
         user: &kube_conf::user::User,
         cluster: &kube_conf::cluster::Cluster,
@@ -118,12 +142,17 @@ impl UserIdentity {
     }
 }
 
+/// Minimum set of information required to access a Kubernetes API server
 pub struct Server {
+    /// URL of the address, this includes the protocol and the port number
     pub url: String,
+    /// CA of the server
     pub ca: Vec<u8>,
 }
 
 impl Server {
+    /// Create a `Server` instance by parsing the data found inside of the
+    /// given kubeconfig
     fn from_cluster(cluster: &kube_conf::cluster::Cluster) -> Result<Self> {
         let ca = if let Some(data) = cluster.certificate_authority_data.as_ref() {
             base64::decode(data).map_err(|_| {

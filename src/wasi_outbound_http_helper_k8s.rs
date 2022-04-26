@@ -1,3 +1,6 @@
+//! Helper functions required to perform HTTP requests against the Kubernetes
+//! API server
+
 use k8s_openapi::http;
 use std::convert::TryFrom;
 
@@ -22,6 +25,12 @@ impl TryFrom<&http::Method> for wasi_outbound_http::Method {
     }
 }
 
+/// Perform HTTP request using the given connection configuration object and
+/// the given request configuration
+///
+/// The `http:Request` objects created by the `k8s-openapi` crate do not have
+/// a target host specified. This function takes care of that by looking at the
+/// Kubernetes settings provided by the [`ConnectionConfig`] object.
 pub fn make_request(
     k8s_req: http::Request<Vec<u8>>,
     connection_config: &ConnectionConfig,

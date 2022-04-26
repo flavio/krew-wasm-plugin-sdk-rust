@@ -1,7 +1,10 @@
+//! Define the errors raised by this crate
+
 use super::wasi_outbound_http;
 use k8s_openapi::http;
 use thiserror::Error;
 
+/// Custom error types
 #[derive(Error, Debug)]
 pub enum KrewWasmSDKError {
     #[error("kube-conf error")]
@@ -29,4 +32,6 @@ pub enum KrewWasmSDKError {
     Unknown,
 }
 
+/// An alias to quickly define blocks of code that return a std `Result` that
+/// uses a [`KrewWasmSDKError`] as Error type
 pub type Result<T> = std::result::Result<T, KrewWasmSDKError>;
